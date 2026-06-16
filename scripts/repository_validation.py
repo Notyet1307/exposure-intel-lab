@@ -225,6 +225,46 @@ def validate_workflows(root: Path) -> list[str]:
         if workflow_path.name.endswith(".disabled") and not DISABLED_REASON_PATTERN.search(text):
             errors.append(f"{path_label} lacks a documented disabled reason or restore condition")
 
+        if workflow_path.name == "deepseek-pr-review.yml":
+            errors.extend(validate_deepseek_workflow_security(path_label, text))
+
+    return errors
+
+
+def validate_deepseek_workflow_security(path_label: str, text: str) -> list[str]:
+    errors: list[str] = []
+    required_fragments = (
+        "pull_request_target:",
+        "pull-requests: read",
+        "issues: write",
+        "path: trusted",
+        "working-directory: trusted",
+        "$RUNNER_TEMP/pr-truncated.diff",
+        "$RUNNER_TEMP/deepseek-review.md",
+        ".github/scripts/deepseek_pr_review.py",
+        ".github/codex/prompts/review.md",
+    )
+
+    for fragment in required_fragments:
+        if fragment not in text:
+            errors.append(f"{path_label} missing trusted DeepSeek workflow fragment {fragment}")
+
+    forbidden_fragments = (
+        "pull-requests: write",
+        "pr-truncated.diff \\\n            .github/codex/prompts/review.md",
+        "${{ github.workspace }}/deepseek-review.md",
+    )
+    for fragment in forbidden_fragments:
+        if fragment in text:
+            errors.append(f"{path_label} contains unsafe DeepSeek workflow fragment {fragment!r}")
+
+    if "DEEPSEEK_API_KEY" in text and "python3 .github/scripts/deepseek_pr_review.py" in text:
+        secret_index = text.index("DEEPSEEK_API_KEY")
+        script_index = text.index("python3 .github/scripts/deepseek_pr_review.py")
+        trusted_index = text.find("working-directory: trusted", 0, script_index)
+        if trusted_index == -1 or trusted_index > secret_index:
+            errors.append(f"{path_label} passes DEEPSEEK_API_KEY without trusted working-directory")
+
     return errors
 
 
