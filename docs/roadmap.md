@@ -35,6 +35,7 @@ Completed:
 - CI, CodeQL, and DeepSeek review are configured for GitHub PR validation.
 - The architecture and safety boundaries are documented.
 - Synthetic exposure fixtures and fixture validation are available.
+- Exposure data contracts are documented and fixture validation is hardened.
 
 Not yet started:
 
@@ -158,7 +159,7 @@ Non-goals:
 
 ## Phase R3: Data Contracts and Validator Hardening
 
-Status: planned.
+Status: complete.
 
 Goal:
 
@@ -180,6 +181,18 @@ Done when:
 - Existing synthetic fixtures pass the stronger validator.
 - Invalid fixtures fail with clear errors.
 - No third-party dependency is required unless explicitly approved.
+
+Evidence:
+
+- Source observation, normalized exposure record, comparison report, and audit
+  manifest contracts are documented in
+  `docs/contracts/exposure-data-contracts.md`.
+- The exposure fixture validator enforces allowed source status and confidence
+  values, chronological snapshot order, observed asset and payload consistency,
+  required comparison coverage, synthetic-only host data, and secret-like field
+  and value rejection.
+- `make verify` runs the exposure fixture validator, and the current synthetic
+  fixtures under `fixtures/exposure/` pass it without adding dependencies.
 
 Non-goals:
 
