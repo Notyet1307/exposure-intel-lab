@@ -235,9 +235,11 @@ def validate_deepseek_workflow_security(path_label: str, text: str) -> list[str]
     errors: list[str] = []
     required_fragments = (
         "pull_request_target:",
-        "pull-requests: read",
+        "pull-requests: write",
         "issues: write",
+        "ref: ${{ github.event.pull_request.base.sha }}",
         "path: trusted",
+        "persist-credentials: false",
         "working-directory: trusted",
         "$RUNNER_TEMP/pr-truncated.diff",
         "$RUNNER_TEMP/deepseek-review.md",
@@ -250,7 +252,6 @@ def validate_deepseek_workflow_security(path_label: str, text: str) -> list[str]
             errors.append(f"{path_label} missing trusted DeepSeek workflow fragment {fragment}")
 
     forbidden_fragments = (
-        "pull-requests: write",
         "pr-truncated.diff \\\n            .github/codex/prompts/review.md",
         "${{ github.workspace }}/deepseek-review.md",
     )
