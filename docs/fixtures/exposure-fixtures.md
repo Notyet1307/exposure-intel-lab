@@ -5,6 +5,10 @@ for the future authorized exposure intelligence workflow. They define the input
 shape that later normalization and comparison code can use before any real API,
 PI-agent, OctoBus, or agent-compose integration exists.
 
+The broader conceptual contracts for source observations, normalized exposure
+records, comparison reports, and audit manifests are documented in
+`docs/contracts/exposure-data-contracts.md`.
+
 These fixtures are not scan results and do not represent real internet targets.
 They use only reserved example domains and documentation IP address ranges:
 
@@ -31,7 +35,8 @@ Each snapshot contains:
 
 - `snapshot_id`: Stable snapshot identifier.
 - `source_id`: Synthetic source identifier.
-- `collected_at`: UTC timestamp for the synthetic collection event.
+- `collected_at`: UTC timestamp for the synthetic collection event. Snapshots in
+  a fixture file must be ordered chronologically by this value.
 - `authorization_scope_ref`: Synthetic authorization reference, not a real
   approval or credential.
 - `observations`: Source-native observations limited to approved synthetic
@@ -43,11 +48,17 @@ Each observation contains:
 - `observed_asset`: The source-reported asset label, either an example domain or
   documentation IP address.
 - `exposure_category`: Source-reported category for later normalization tests.
-- `source_status`: Source-reported status such as `observed` or `remediated`.
-- `source_confidence`: Source-reported confidence level.
+- `source_status`: Source-reported status. Allowed values are `observed` and
+  `remediated`.
+- `source_confidence`: Source-reported confidence level. Allowed values are
+  `low`, `medium`, and `high`.
 - `source_payload`: Synthetic near-raw source payload, limited to approved
   fields such as example asset labels, documentation IPs, ports, protocols,
   service names, and evidence notes.
+
+For domain observations, `source_payload.asset` must match
+`observed_asset.value`. For IP observations, `source_payload.ip` must match
+`observed_asset.value`.
 
 ## Safety Constraints
 
@@ -55,7 +66,9 @@ Fixture data must not contain secrets, credentials, cookies, customer data,
 production data, real targets, external API responses, or private target data.
 The fixture validator rejects common secret-like field names, real-looking host
 data outside the allowed example domains and documentation IP ranges, and
-missing comparison coverage.
+missing comparison coverage. It also rejects obvious secret-like string values,
+including common token formats and direct secret, token, password, credential,
+cookie, API key, or private key assignments inside fixture values.
 
 Future work may add parsers, normalizers, and comparison tests against these
 fixtures. It must still avoid active scanning, crawling, probing, exploitation,
