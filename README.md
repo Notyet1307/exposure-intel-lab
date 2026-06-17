@@ -24,6 +24,9 @@ be introduced through reviewed Multica issues and GitHub pull requests.
   this repository.
 - [NEW-REPO-BOOTSTRAP-CHECKLIST.md](NEW-REPO-BOOTSTRAP-CHECKLIST.md) tracks the
   bootstrap checklist for this repository's Multica, Codex, and GitHub workflow.
+- [docs/architecture/exposure-intelligence-workflow.md](docs/architecture/exposure-intelligence-workflow.md)
+  defines the target authorized exposure intelligence workflow architecture and
+  safety boundaries.
 
 ## Verification
 
