@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_DIR = ROOT / "fixtures" / "exposure"
 EXPECTED_KIND = "source_observation_snapshots"
 EXPECTED_CASES = {"added", "removed", "changed", "unchanged"}
+ALLOWED_SOURCE_STATUSES = {"observed", "remediated"}
+ALLOWED_SOURCE_CONFIDENCES = {"low", "medium", "high"}
 ALLOWED_DOMAIN_SUFFIXES = (".example", ".invalid")
 ALLOWED_IP_NETWORKS = tuple(
     ipaddress.ip_network(network)
@@ -31,6 +33,36 @@ DOMAIN_LIKE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 ISO_UTC_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+SECRET_VALUE_PATTERNS = (
+    (
+        "private key block",
+        re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    ),
+    (
+        "JWT-like token",
+        re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
+    ),
+    (
+        "GitHub token-like value",
+        re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b"),
+    ),
+    (
+        "AWS access key-like value",
+        re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"),
+    ),
+    (
+        "bearer token-like value",
+        re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b"),
+    ),
+    (
+        "secret assignment-like value",
+        re.compile(
+            r"\b(?:secret|token|password|credential|cookie|api[_-]?key|private[_-]?key)\b"
+            r"\s*[:=]\s*['\"]?[A-Za-z0-9._~+/=-]{12,}",
+            re.IGNORECASE,
+        ),
+    ),
+)
 
 
 def main() -> int:
@@ -68,6 +100,7 @@ def validate_fixture_file(path: Path) -> list[str]:
         return [f"{label} must be a JSON object"]
 
     errors.extend(validate_no_secret_fields(data, label))
+    errors.extend(validate_secret_like_values(data, label))
     errors.extend(validate_strings_are_synthetic(data, label))
 
     for field in ("fixture_set_id", "fixture_kind", "description", "safety", "comparison_expectations", "snapshots"):
@@ -90,12 +123,17 @@ def validate_fixture_file(path: Path) -> list[str]:
 
     snapshot_ids: set[str] = set()
     observed_records: dict[str, set[str]] = {}
+    previous_collected_at: datetime | None = None
     for index, snapshot in enumerate(snapshots):
         if not isinstance(snapshot, dict):
             errors.append(f"{label} snapshots[{index}] must be an object")
             continue
-        snapshot_errors, snapshot_id, record_ids = validate_snapshot(snapshot, label, index)
+        snapshot_errors, snapshot_id, record_ids, collected_at = validate_snapshot(snapshot, label, index)
         errors.extend(snapshot_errors)
+        if collected_at is not None:
+            if previous_collected_at is not None and collected_at <= previous_collected_at:
+                errors.append(f"{label} snapshots[{index}].collected_at must be later than the previous snapshot")
+            previous_collected_at = collected_at
         if snapshot_id:
             if snapshot_id in snapshot_ids:
                 errors.append(f"{label} duplicate snapshot_id {snapshot_id}")
@@ -111,10 +149,15 @@ def validate_fixture_file(path: Path) -> list[str]:
     return errors
 
 
-def validate_snapshot(snapshot: dict[str, Any], label: str, index: int) -> tuple[list[str], str | None, set[str]]:
+def validate_snapshot(
+    snapshot: dict[str, Any],
+    label: str,
+    index: int,
+) -> tuple[list[str], str | None, set[str], datetime | None]:
     errors: list[str] = []
     prefix = f"{label} snapshots[{index}]"
     record_ids: set[str] = set()
+    collected_at_datetime: datetime | None = None
 
     required_fields = ("snapshot_id", "source_id", "collected_at", "authorization_scope_ref", "observations")
     for field in required_fields:
@@ -125,13 +168,15 @@ def validate_snapshot(snapshot: dict[str, Any], label: str, index: int) -> tuple
     require_string(snapshot.get("source_id"), f"{prefix}.source_id", errors)
     collected_at = require_string(snapshot.get("collected_at"), f"{prefix}.collected_at", errors)
     require_string(snapshot.get("authorization_scope_ref"), f"{prefix}.authorization_scope_ref", errors)
-    if collected_at and not is_utc_timestamp(collected_at):
+    if collected_at:
+        collected_at_datetime = parse_utc_timestamp(collected_at)
+    if collected_at and collected_at_datetime is None:
         errors.append(f"{prefix}.collected_at must be an ISO-8601 UTC timestamp")
 
     observations = snapshot.get("observations")
     if not isinstance(observations, list) or not observations:
         errors.append(f"{prefix}.observations must be a non-empty list")
-        return errors, snapshot_id, record_ids
+        return errors, snapshot_id, record_ids, collected_at_datetime
 
     for observation_index, observation in enumerate(observations):
         if not isinstance(observation, dict):
@@ -145,7 +190,7 @@ def validate_snapshot(snapshot: dict[str, Any], label: str, index: int) -> tuple
                 errors.append(f"{prefix} duplicate source_record_id {record_id}")
             record_ids.add(record_id)
 
-    return errors, snapshot_id, record_ids
+    return errors, snapshot_id, record_ids, collected_at_datetime
 
 
 def validate_observation(observation: dict[str, Any], prefix: str) -> tuple[list[str], str | None]:
@@ -164,25 +209,51 @@ def validate_observation(observation: dict[str, Any], prefix: str) -> tuple[list
 
     record_id = require_string(observation.get("source_record_id"), f"{prefix}.source_record_id", errors)
     require_string(observation.get("exposure_category"), f"{prefix}.exposure_category", errors)
-    require_string(observation.get("source_status"), f"{prefix}.source_status", errors)
-    require_string(observation.get("source_confidence"), f"{prefix}.source_confidence", errors)
+    source_status = require_string(observation.get("source_status"), f"{prefix}.source_status", errors)
+    source_confidence = require_string(observation.get("source_confidence"), f"{prefix}.source_confidence", errors)
+    if source_status and source_status not in ALLOWED_SOURCE_STATUSES:
+        errors.append(f"{prefix}.source_status must be one of {sorted(ALLOWED_SOURCE_STATUSES)}")
+    if source_confidence and source_confidence not in ALLOWED_SOURCE_CONFIDENCES:
+        errors.append(f"{prefix}.source_confidence must be one of {sorted(ALLOWED_SOURCE_CONFIDENCES)}")
 
     observed_asset = observation.get("observed_asset")
+    observed_asset_kind: str | None = None
+    observed_asset_value: str | None = None
     if not isinstance(observed_asset, dict):
         errors.append(f"{prefix}.observed_asset must be an object")
     else:
-        kind = require_string(observed_asset.get("kind"), f"{prefix}.observed_asset.kind", errors)
-        value = require_string(observed_asset.get("value"), f"{prefix}.observed_asset.value", errors)
-        if kind and value:
-            errors.extend(validate_asset_value(kind, value, f"{prefix}.observed_asset.value"))
+        observed_asset_kind = require_string(observed_asset.get("kind"), f"{prefix}.observed_asset.kind", errors)
+        observed_asset_value = require_string(observed_asset.get("value"), f"{prefix}.observed_asset.value", errors)
+        if observed_asset_kind and observed_asset_value:
+            errors.extend(validate_asset_value(observed_asset_kind, observed_asset_value, f"{prefix}.observed_asset.value"))
 
     source_payload = observation.get("source_payload")
     if not isinstance(source_payload, dict):
         errors.append(f"{prefix}.source_payload must be an object")
     elif not source_payload:
         errors.append(f"{prefix}.source_payload must not be empty")
+    elif observed_asset_kind and observed_asset_value:
+        errors.extend(validate_observed_asset_payload_consistency(observed_asset_kind, observed_asset_value, source_payload, prefix))
 
     return errors, record_id
+
+
+def validate_observed_asset_payload_consistency(
+    observed_asset_kind: str,
+    observed_asset_value: str,
+    source_payload: dict[str, Any],
+    prefix: str,
+) -> list[str]:
+    errors: list[str] = []
+    if observed_asset_kind == "domain":
+        payload_asset = require_string(source_payload.get("asset"), f"{prefix}.source_payload.asset", errors)
+        if payload_asset and payload_asset != observed_asset_value:
+            errors.append(f"{prefix}.source_payload.asset must match observed_asset.value")
+    elif observed_asset_kind == "ip":
+        payload_ip = require_string(source_payload.get("ip"), f"{prefix}.source_payload.ip", errors)
+        if payload_ip and payload_ip != observed_asset_value:
+            errors.append(f"{prefix}.source_payload.ip must match observed_asset.value")
+    return errors
 
 
 def validate_comparison_expectations(
@@ -279,6 +350,21 @@ def validate_no_secret_fields(value: Any, label: str) -> list[str]:
     return errors
 
 
+def validate_secret_like_values(value: Any, label: str) -> list[str]:
+    errors: list[str] = []
+    if isinstance(value, dict):
+        for key, child in value.items():
+            errors.extend(validate_secret_like_values(child, f"{label}.{key}"))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            errors.extend(validate_secret_like_values(child, f"{label}[{index}]"))
+    elif isinstance(value, str):
+        for pattern_label, pattern in SECRET_VALUE_PATTERNS:
+            if pattern.search(value):
+                errors.append(f"{label} contains a {pattern_label}")
+    return errors
+
+
 def validate_strings_are_synthetic(value: Any, label: str) -> list[str]:
     errors: list[str] = []
     if isinstance(value, dict):
@@ -317,13 +403,16 @@ def is_allowed_ip(value: str) -> bool:
 
 
 def is_utc_timestamp(value: str) -> bool:
+    return parse_utc_timestamp(value) is not None
+
+
+def parse_utc_timestamp(value: str) -> datetime | None:
     if not ISO_UTC_PATTERN.match(value):
-        return False
+        return None
     try:
-        datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
-        return False
-    return True
+        return None
 
 
 def require_string(value: Any, label: str, errors: list[str]) -> str | None:
