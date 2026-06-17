@@ -38,6 +38,8 @@ for the fixture shape and safety constraints.
 - [docs/architecture/exposure-intelligence-workflow.md](docs/architecture/exposure-intelligence-workflow.md)
   defines the target authorized exposure intelligence workflow architecture and
   safety boundaries.
+- [docs/roadmap.md](docs/roadmap.md) defines the project phases, hard gates,
+  delivery boundaries, and roadmap metadata expected in future issues.
 
 ## Verification
 
