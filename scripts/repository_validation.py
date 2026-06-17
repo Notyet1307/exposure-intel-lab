@@ -235,8 +235,10 @@ def validate_deepseek_workflow_security(path_label: str, text: str) -> list[str]
     errors: list[str] = []
     required_fragments = (
         "pull_request_target:",
+        "contents: read",
         "pull-requests: write",
         "issues: write",
+        "uses: actions/checkout@v5",
         "ref: ${{ github.event.pull_request.base.sha }}",
         "path: trusted",
         "persist-credentials: false",
