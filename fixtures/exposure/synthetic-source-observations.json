@@ -1,0 +1,183 @@
+{
+  "fixture_set_id": "synthetic-authorized-source-observations-v1",
+  "fixture_kind": "source_observation_snapshots",
+  "description": "Synthetic source observations for validating fixture-first exposure intelligence work without real targets or integrations.",
+  "safety": {
+    "synthetic_only": true,
+    "authorization_scope_refs": [
+      "AUTH-SYNTHETIC-EXAMPLE-ONLY"
+    ],
+    "allowed_target_data": [
+      ".example domains",
+      ".invalid domains",
+      "192.0.2.0/24 documentation IPs",
+      "198.51.100.0/24 documentation IPs",
+      "203.0.113.0/24 documentation IPs"
+    ],
+    "prohibited_actions": [
+      "active scanning",
+      "crawling",
+      "probing",
+      "exploitation",
+      "fingerprinting",
+      "credential testing",
+      "real target interaction"
+    ]
+  },
+  "comparison_expectations": [
+    {
+      "case": "unchanged",
+      "source_record_id": "src-rec-web-001",
+      "baseline_snapshot_id": "snapshot-2026-01-01",
+      "current_snapshot_id": "snapshot-2026-01-02",
+      "notes": "The web-alpha observation remains stable across snapshots."
+    },
+    {
+      "case": "changed",
+      "source_record_id": "src-rec-api-002",
+      "baseline_snapshot_id": "snapshot-2026-01-01",
+      "current_snapshot_id": "snapshot-2026-01-02",
+      "notes": "The api-beta observation keeps the same source record id with changed status and payload."
+    },
+    {
+      "case": "removed",
+      "source_record_id": "src-rec-admin-003",
+      "baseline_snapshot_id": "snapshot-2026-01-01",
+      "current_snapshot_id": null,
+      "notes": "The admin-gamma observation exists only in the baseline snapshot."
+    },
+    {
+      "case": "added",
+      "source_record_id": "src-rec-files-004",
+      "baseline_snapshot_id": null,
+      "current_snapshot_id": "snapshot-2026-01-02",
+      "notes": "The files-delta observation exists only in the current snapshot."
+    }
+  ],
+  "snapshots": [
+    {
+      "snapshot_id": "snapshot-2026-01-01",
+      "source_id": "synthetic-authorized-inventory",
+      "collected_at": "2026-01-01T00:00:00Z",
+      "authorization_scope_ref": "AUTH-SYNTHETIC-EXAMPLE-ONLY",
+      "observations": [
+        {
+          "source_record_id": "src-rec-web-001",
+          "observed_asset": {
+            "kind": "domain",
+            "value": "web-alpha.example"
+          },
+          "exposure_category": "https-service",
+          "source_status": "observed",
+          "source_confidence": "high",
+          "source_payload": {
+            "asset": "web-alpha.example",
+            "ip": "192.0.2.10",
+            "port": 443,
+            "protocol": "https",
+            "service_name": "synthetic-web",
+            "evidence": "Synthetic unchanged source observation."
+          }
+        },
+        {
+          "source_record_id": "src-rec-api-002",
+          "observed_asset": {
+            "kind": "domain",
+            "value": "api-beta.example"
+          },
+          "exposure_category": "api-service",
+          "source_status": "observed",
+          "source_confidence": "medium",
+          "source_payload": {
+            "asset": "api-beta.example",
+            "ip": "198.51.100.20",
+            "port": 8443,
+            "protocol": "https",
+            "service_name": "synthetic-api",
+            "evidence": "Synthetic baseline source observation before a status change."
+          }
+        },
+        {
+          "source_record_id": "src-rec-admin-003",
+          "observed_asset": {
+            "kind": "domain",
+            "value": "admin-gamma.invalid"
+          },
+          "exposure_category": "admin-interface",
+          "source_status": "observed",
+          "source_confidence": "low",
+          "source_payload": {
+            "asset": "admin-gamma.invalid",
+            "ip": "203.0.113.30",
+            "port": 9443,
+            "protocol": "https",
+            "service_name": "synthetic-admin",
+            "evidence": "Synthetic baseline-only source observation."
+          }
+        }
+      ]
+    },
+    {
+      "snapshot_id": "snapshot-2026-01-02",
+      "source_id": "synthetic-authorized-inventory",
+      "collected_at": "2026-01-02T00:00:00Z",
+      "authorization_scope_ref": "AUTH-SYNTHETIC-EXAMPLE-ONLY",
+      "observations": [
+        {
+          "source_record_id": "src-rec-web-001",
+          "observed_asset": {
+            "kind": "domain",
+            "value": "web-alpha.example"
+          },
+          "exposure_category": "https-service",
+          "source_status": "observed",
+          "source_confidence": "high",
+          "source_payload": {
+            "asset": "web-alpha.example",
+            "ip": "192.0.2.10",
+            "port": 443,
+            "protocol": "https",
+            "service_name": "synthetic-web",
+            "evidence": "Synthetic unchanged source observation."
+          }
+        },
+        {
+          "source_record_id": "src-rec-api-002",
+          "observed_asset": {
+            "kind": "domain",
+            "value": "api-beta.example"
+          },
+          "exposure_category": "api-service",
+          "source_status": "remediated",
+          "source_confidence": "medium",
+          "source_payload": {
+            "asset": "api-beta.example",
+            "ip": "198.51.100.20",
+            "port": 443,
+            "protocol": "https",
+            "service_name": "synthetic-api",
+            "evidence": "Synthetic current source observation after a status and port change."
+          }
+        },
+        {
+          "source_record_id": "src-rec-files-004",
+          "observed_asset": {
+            "kind": "ip",
+            "value": "203.0.113.44"
+          },
+          "exposure_category": "file-transfer",
+          "source_status": "observed",
+          "source_confidence": "medium",
+          "source_payload": {
+            "asset": "files-delta.example",
+            "ip": "203.0.113.44",
+            "port": 22,
+            "protocol": "ssh",
+            "service_name": "synthetic-files",
+            "evidence": "Synthetic current-only source observation."
+          }
+        }
+      ]
+    }
+  ]
+}

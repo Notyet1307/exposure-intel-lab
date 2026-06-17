@@ -3,7 +3,7 @@
 `exposure-intel-lab` is a governance-first repository for evaluating an
 authorized exposure intelligence workflow. The repository currently defines the
 Codex, Multica, and GitHub operating model that future implementation work will
-use.
+use, plus synthetic exposure fixtures for fixture-first validation.
 
 ## Current phase
 
@@ -17,6 +17,17 @@ in this phase.
 
 Future ingestion or analysis work must use authorized data sources only and must
 be introduced through reviewed Multica issues and GitHub pull requests.
+
+## Synthetic exposure fixtures
+
+Synthetic source observation fixtures live in
+[`fixtures/exposure/`](fixtures/exposure/). They use only example domains and
+documentation IP ranges so future normalization and comparison work can be built
+without real targets, external APIs, credentials, customer data, or runtime
+integrations.
+
+See [`docs/fixtures/exposure-fixtures.md`](docs/fixtures/exposure-fixtures.md)
+for the fixture shape and safety constraints.
 
 ## Agent workflow
 
@@ -34,4 +45,10 @@ Use the standard repository verification entrypoint:
 
 ```bash
 make verify
+```
+
+To run only the exposure fixture validator:
+
+```bash
+python3 scripts/validate-exposure-fixtures.py
 ```
