@@ -17,149 +17,116 @@ def relative(path: Path, root: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
-def parse_frontmatter(path: Path) -> tuple[dict[str, str], list[str]]:
-    text = path.read_text(encoding="utf-8")
-    if not text.startswith("---\n"):
-        return {}, [f"{path.name} missing frontmatter block"]
-
-    lines = text.splitlines()
-    end_index = None
-    for index, line in enumerate(lines[1:], start=1):
-        if line == "---":
-            end_index = index
-            break
-
-    if end_index is None:
-        return {}, [f"{path.name} has unterminated frontmatter block"]
-
-    fields: dict[str, str] = {}
-    for line in lines[1:end_index]:
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        key, separator, value = line.partition(":")
-        if not separator:
-            continue
-        fields[key.strip()] = value.strip().strip('"').strip("'")
-
-    return fields, []
-
-
-def skill_names(root: Path) -> set[str]:
-    names: set[str] = set()
-    skills_dir = root / ".agents/skills"
-    if not skills_dir.is_dir():
-        return names
-
-    for skill_dir in sorted(path for path in skills_dir.iterdir() if path.is_dir()):
-        skill_file = skill_dir / "SKILL.md"
-        if not skill_file.is_file():
-            continue
-        fields, _ = parse_frontmatter(skill_file)
-        names.add(fields.get("name") or skill_dir.name)
-    return names
-
-
-def validate_skills(root: Path) -> list[str]:
+def validate_project_governance(root: Path) -> list[str]:
     errors: list[str] = []
-    skills_dir = root / ".agents/skills"
-    if not skills_dir.is_dir():
-        return [".agents/skills is missing"]
 
-    skill_dirs = sorted(path for path in skills_dir.iterdir() if path.is_dir())
-    if not skill_dirs:
-        errors.append(".agents/skills has no skill directories")
+    required_files = (
+        "AGENTS.md",
+        "Makefile",
+        "README.md",
+        "NEW-REPO-BOOTSTRAP-CHECKLIST.md",
+        "docs/agents/domain.md",
+        "docs/agents/code-review.md",
+        "docs/agents/security-review.md",
+        "docs/agents/issue-tracker.md",
+        "docs/agents/pr-guidelines.md",
+        "docs/agents/triage-labels.md",
+        "docs/architecture/exposure-intelligence-workflow.md",
+        "docs/contracts/exposure-data-contracts.md",
+        "docs/fixtures/exposure-fixtures.md",
+        "docs/roadmap.md",
+        "fixtures/exposure/synthetic-source-observations.json",
+        "multica/issue-template.md",
+        ".github/ISSUE_TEMPLATE/bug.yml",
+        ".github/ISSUE_TEMPLATE/feature.yml",
+        ".github/ISSUE_TEMPLATE/security-review.yml",
+        ".github/codex/prompts/review.md",
+        ".github/pull_request_template.md",
+        ".github/scripts/deepseek_pr_review.py",
+        ".github/workflows/ci.yml",
+        ".github/workflows/codeql.yml",
+        ".github/workflows/deepseek-pr-review.yml",
+        "scripts/check-agent-ready.sh",
+        "scripts/validate-exposure-fixtures.py",
+    )
+    for file_path in required_files:
+        if not (root / file_path).is_file():
+            errors.append(f"{file_path} is missing")
 
-    for skill_dir in skill_dirs:
-        skill_file = skill_dir / "SKILL.md"
-        if not skill_file.is_file():
-            errors.append(f"{relative(skill_file, root)} is missing")
+    required_fragments = {
+        "AGENTS.md": (
+            "Product: exposure-intel-lab",
+            "Repository: exposure-intel-lab",
+            "This bootstrap does not add product runtime code.",
+            "Notyet1307/codex-multica",
+            "Active scanning, crawling, probing, exploitation, fingerprinting, credential testing, or unauthorized internet target interaction is out of scope.",
+        ),
+        "Makefile": (
+            "validate-project-governance.py",
+            "validate-exposure-fixtures.py",
+        ),
+        "multica/issue-template.md": (
+            "Active scanning/probing/credential testing touched: yes/no",
+            "Real target or real exposure data interaction touched: yes/no",
+            "The work requires real API credentials.",
+        ),
+        "docs/agents/domain.md": (
+            "Authorized data source",
+            "Active scanning",
+            "Notyet1307/codex-multica",
+        ),
+        "NEW-REPO-BOOTSTRAP-CHECKLIST.md": (
+            "Notyet1307/codex-multica",
+            "Keep `multica/issue-template.md`",
+        ),
+        ".github/workflows/ci.yml": ("make verify",),
+        ".github/pull_request_template.md": ("Multica",),
+        ".github/codex/prompts/review.md": ("Return Markdown",),
+        "docs/roadmap.md": (
+            "Product runtime code",
+            "No active interaction",
+        ),
+        "docs/contracts/exposure-data-contracts.md": ("synthetic data surface",),
+        "docs/fixtures/exposure-fixtures.md": ("synthetic",),
+    }
+    for file_path, fragments in required_fragments.items():
+        path = root / file_path
+        if not path.is_file():
             continue
+        text = path.read_text(encoding="utf-8")
+        for fragment in fragments:
+            if fragment not in text:
+                errors.append(f"{file_path} missing required governance fragment {fragment}")
 
-        fields, frontmatter_errors = parse_frontmatter(skill_file)
-        errors.extend(f"{relative(skill_file, root)} {error}" for error in frontmatter_errors)
-        for field in ("name", "description"):
-            if not fields.get(field):
-                errors.append(f"{relative(skill_file, root)} frontmatter missing {field}")
-
-    return errors
-
-
-def parse_agents_config(path: Path) -> list[dict[str, object]]:
-    agents: list[dict[str, object]] = []
-    current: dict[str, object] | None = None
-    in_skills = False
-
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.split("#", 1)[0].rstrip()
-        if not line.strip():
+    forbidden_fragments = {
+        "Makefile": (
+            "validate-skills.py",
+            "validate-multica-config.py",
+        ),
+        "AGENTS.md": (
+            "python3 scripts/validate-skills.py",
+            "python3 scripts/validate-multica-config.py",
+        ),
+    }
+    for file_path, fragments in forbidden_fragments.items():
+        path = root / file_path
+        if not path.is_file():
             continue
+        text = path.read_text(encoding="utf-8")
+        for fragment in fragments:
+            if fragment in text:
+                errors.append(f"{file_path} contains obsolete validation command {fragment}")
 
-        name_match = re.match(r"^\s*-\s+name:\s*(\S.*)$", line)
-        if name_match:
-            current = {"name": name_match.group(1).strip(), "skills": []}
-            agents.append(current)
-            in_skills = False
-            continue
-
-        if current is None:
-            continue
-
-        system_prompt_match = re.match(r"^\s*system_prompt_file:\s*(\S.*)$", line)
-        if system_prompt_match:
-            current["system_prompt_file"] = system_prompt_match.group(1).strip()
-            in_skills = False
-            continue
-
-        if re.match(r"^\s*skills:\s*$", line):
-            in_skills = True
-            continue
-
-        list_item_match = re.match(r"^\s*-\s*(\S.*)$", line)
-        if in_skills and list_item_match:
-            current.setdefault("skills", []).append(list_item_match.group(1).strip())
-            continue
-
-        if re.match(r"^\s*\w[\w_-]*:\s*", line):
-            in_skills = False
-
-    return agents
-
-
-def validate_multica_config(root: Path) -> list[str]:
-    errors: list[str] = []
-    agents_path = root / "multica/agents.yaml"
-    if not agents_path.is_file():
-        return ["multica/agents.yaml is missing"]
-
-    known_skills = skill_names(root)
-    agents = parse_agents_config(agents_path)
-    if not agents:
-        errors.append("multica/agents.yaml defines no agents")
-
-    for agent in agents:
-        name = str(agent.get("name", "<unnamed>"))
-        for skill in agent.get("skills", []):
-            if str(skill) not in known_skills:
-                errors.append(f"{name} references missing skill {skill}")
-
-        prompt_file = agent.get("system_prompt_file")
-        if not prompt_file:
-            errors.append(f"{name} is missing system_prompt_file")
-            continue
-
-        prompt_path = root / str(prompt_file)
-        if not prompt_path.is_file():
-            errors.append(f"{name} references missing system_prompt_file {prompt_file}")
-        elif not prompt_path.read_text(encoding="utf-8").strip():
-            errors.append(f"{prompt_file} is empty")
-
-    prompts_dir = root / "multica/agent-system-prompts"
-    if not prompts_dir.is_dir():
-        errors.append("multica/agent-system-prompts is missing")
-    else:
-        for prompt_path in sorted(prompts_dir.glob("*.md")):
-            if not prompt_path.read_text(encoding="utf-8").strip():
-                errors.append(f"{relative(prompt_path, root)} is empty")
+    forbidden_paths = (
+        ".agents/skills",
+        "multica/agent-system-prompts",
+        "multica/agents.yaml",
+        "multica/squads.yaml",
+        "multica/autopilots.yaml",
+    )
+    for forbidden_path in forbidden_paths:
+        if (root / forbidden_path).exists():
+            errors.append(f"{forbidden_path} is a shared runtime template copy and should not be present")
 
     return errors
 
@@ -279,12 +246,14 @@ def validate_readme_paths(root: Path) -> list[str]:
     readme = readme_path.read_text(encoding="utf-8")
     key_paths = (
         "AGENTS.md",
-        ".agents/skills",
         ".github/codex/prompts",
         ".github/workflows",
         ".github/pull_request_template.md",
         "docs/agents",
-        "multica",
+        "docs/contracts",
+        "docs/fixtures",
+        "fixtures/exposure",
+        "multica/issue-template.md",
         "scripts",
     )
 
@@ -314,8 +283,7 @@ def run_checks(root: Path, checks: Iterable[tuple[str, callable]]) -> int:
 def main(check_name: str | None = None) -> int:
     root = Path.cwd()
     checks = {
-        "skills": validate_skills,
-        "multica-config": validate_multica_config,
+        "project-governance": validate_project_governance,
         "prompts": validate_prompts,
         "workflows": validate_workflows,
         "readme-paths": validate_readme_paths,

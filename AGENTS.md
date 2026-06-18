@@ -14,23 +14,30 @@ This file is the durable operating manual for Codex and other coding agents work
 - Product runtime: not present in this bootstrap issue.
 - Issue tracker: Multica. GitHub PRs must reference Multica issue IDs, for example `MUL-123`.
 - Production data classification: none in this repository during governance bootstrap; future data handling must be explicitly authorized before implementation.
+- Shared live Multica agents, skills, prompts, squads, and autopilot templates are maintained in `Notyet1307/codex-multica` and live Multica workspace configuration, not in this product repository.
 
 ## Current scope
 
 This bootstrap establishes the Codex + Multica + GitHub operating model for exposure-intel-lab.
 
-Allowed bootstrap work is limited to governance and review scaffolding:
+Repo-owned bootstrap work is limited to project-specific governance, safety, validation, fixture, contract, and review scaffolding:
 
 - `AGENTS.md`
 - `Makefile`
 - `NEW-REPO-BOOTSTRAP-CHECKLIST.md`
-- `.agents/skills/`
 - `.github/`
 - `docs/agents/`
-- `multica/`
+- `docs/architecture/`
+- `docs/contracts/`
+- `docs/fixtures/`
+- `docs/roadmap.md`
+- `fixtures/exposure/`
+- `multica/issue-template.md`
 - `scripts/`
 
 This bootstrap does not add product runtime code.
+
+Do not copy shared runtime templates back into this repository without a later explicit Multica issue. Shared skills, agent prompts, desired live agent state, squad design, and autopilot templates belong in `Notyet1307/codex-multica` and live Multica workspace configuration.
 
 ## Security and authorization boundaries
 
@@ -47,7 +54,7 @@ Stop and ask a human before proceeding if a task would require:
 - active scanning, probing, exploitation, or credential testing
 - installing PI-agent, OctoBus, agent-compose, or Apple container
 - adding product runtime code
-- changing workspace skills or agents
+- changing shared workspace skills or agents
 - modifying Multica workspace runtime directly
 
 ## Repository layout
@@ -59,10 +66,14 @@ Current governance layout:
 ├── AGENTS.md
 ├── Makefile
 ├── NEW-REPO-BOOTSTRAP-CHECKLIST.md
-├── .agents/skills/
 ├── .github/
 ├── docs/agents/
-├── multica/
+├── docs/architecture/
+├── docs/contracts/
+├── docs/fixtures/
+├── docs/roadmap.md
+├── fixtures/exposure/
+├── multica/issue-template.md
 └── scripts/
 ```
 
@@ -84,10 +95,11 @@ bash scripts/check-agent-ready.sh
 bash -n scripts/*.sh
 
 # Structural validation
-python3 scripts/validate-skills.py
-python3 scripts/validate-multica-config.py
+python3 scripts/validate-project-governance.py
 python3 scripts/validate-prompts.py
 python3 scripts/validate-workflows.py
+python3 scripts/validate-readme-paths.py
+python3 scripts/validate-exposure-fixtures.py
 ```
 
 ## Language policy

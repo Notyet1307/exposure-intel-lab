@@ -12,6 +12,15 @@ require_file() {
   fi
 }
 
+require_absent() {
+  if [ -e "$1" ]; then
+    echo "UNEXPECTED: $1"
+    missing=1
+  else
+    echo "OK: $1 is absent"
+  fi
+}
+
 require_contains() {
   if ! grep -Fq "$2" "$1"; then
     echo "MISSING: $1 does not contain $2"
@@ -37,23 +46,45 @@ require_file docs/agents/domain.md
 require_file docs/agents/code-review.md
 require_file docs/agents/security-review.md
 require_file docs/agents/issue-tracker.md
+require_file docs/agents/pr-guidelines.md
+require_file docs/agents/triage-labels.md
+require_file docs/architecture/exposure-intelligence-workflow.md
+require_file docs/contracts/exposure-data-contracts.md
+require_file docs/fixtures/exposure-fixtures.md
+require_file docs/roadmap.md
+require_file fixtures/exposure/synthetic-source-observations.json
+require_file multica/issue-template.md
 require_file .github/pull_request_template.md
 require_file .github/codex/prompts/review.md
 require_file .github/scripts/deepseek_pr_review.py
 require_file .github/workflows/ci.yml
 require_file .github/workflows/deepseek-pr-review.yml
 require_file .github/workflows/codeql.yml
+require_file scripts/validate-project-governance.py
+require_file scripts/validate-exposure-fixtures.py
+
+require_absent .agents/skills
+require_absent multica/agent-system-prompts
+require_absent multica/agents.yaml
+require_absent multica/squads.yaml
+require_absent multica/autopilots.yaml
 
 require_contains AGENTS.md "Product: exposure-intel-lab"
 require_contains AGENTS.md "Repository: exposure-intel-lab"
 require_contains AGENTS.md "This bootstrap does not add product runtime code."
+require_contains AGENTS.md "Notyet1307/codex-multica"
 require_contains AGENTS.md "Active scanning, crawling, probing, exploitation, fingerprinting, credential testing, or unauthorized internet target interaction is out of scope."
 require_contains AGENTS.md "Future API ingestion must use authorized data sources only."
 require_contains AGENTS.md "PI-agent, OctoBus, agent-compose, and containerization are future design topics."
 require_contains AGENTS.md "make verify"
 require_contains NEW-REPO-BOOTSTRAP-CHECKLIST.md "Future API ingestion must use authorized data sources only."
+require_contains NEW-REPO-BOOTSTRAP-CHECKLIST.md "Keep \`multica/issue-template.md\`"
+require_contains NEW-REPO-BOOTSTRAP-CHECKLIST.md "Notyet1307/codex-multica"
 require_contains docs/agents/domain.md "Authorized data source"
 require_contains docs/agents/domain.md "Active scanning"
+require_contains docs/agents/domain.md "Notyet1307/codex-multica"
+require_contains multica/issue-template.md "Active scanning/probing/credential testing touched: yes/no"
+require_contains multica/issue-template.md "Real target or real exposure data interaction touched: yes/no"
 require_contains .github/workflows/ci.yml "make verify"
 require_contains .github/workflows/codeql.yml "language: ['python']"
 require_not_contains .github/workflows/codeql.yml "language: ['javascript-typescript']"
@@ -74,13 +105,6 @@ require_contains .github/workflows/deepseek-pr-review.yml "exit 0"
 require_contains .github/workflows/deepseek-pr-review.yml "always() && steps.deepseek_review.outputs.exit_code != '0'"
 
 python3 .github/scripts/deepseek_pr_review.py --self-test
-
-if [ -d .agents/skills ]; then
-  find .agents/skills -mindepth 2 -maxdepth 2 -name SKILL.md -print | sort
-else
-  echo "MISSING: .agents/skills"
-  missing=1
-fi
 
 if [ "$missing" -ne 0 ]; then
   echo "Agent readiness check failed."
