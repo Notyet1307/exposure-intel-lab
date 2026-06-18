@@ -20,22 +20,34 @@ part of this bootstrap.
 - [x] Future API ingestion must use authorized data sources only.
 - [x] PI-agent, OctoBus, agent-compose, and containerization are future issues.
 
-## 2. Copy Governance Files
+## 2. Keep Project Governance Files
 
-- [x] Copy `AGENTS.md`.
-- [x] Copy `Makefile`.
-- [x] Copy `NEW-REPO-BOOTSTRAP-CHECKLIST.md`.
-- [x] Copy `.agents/skills/`.
-- [x] Copy `.github/ISSUE_TEMPLATE/`.
-- [x] Copy `.github/codex/prompts/`.
-- [x] Copy `.github/scripts/deepseek_pr_review.py`.
-- [x] Copy `.github/workflows/ci.yml`.
-- [x] Copy `.github/workflows/codeql.yml`.
-- [x] Copy `.github/workflows/deepseek-pr-review.yml`.
-- [x] Copy `.github/pull_request_template.md`.
-- [x] Copy `docs/agents/`.
-- [x] Copy `multica/`.
-- [x] Copy `scripts/`.
+- [x] Keep `AGENTS.md`.
+- [x] Keep `Makefile`.
+- [x] Keep `NEW-REPO-BOOTSTRAP-CHECKLIST.md`.
+- [x] Keep `.github/ISSUE_TEMPLATE/`.
+- [x] Keep `.github/codex/prompts/`.
+- [x] Keep `.github/scripts/deepseek_pr_review.py`.
+- [x] Keep `.github/workflows/ci.yml`.
+- [x] Keep `.github/workflows/codeql.yml`.
+- [x] Keep `.github/workflows/deepseek-pr-review.yml`.
+- [x] Keep `.github/pull_request_template.md`.
+- [x] Keep `docs/agents/`, `docs/architecture/`, `docs/contracts/`,
+      `docs/fixtures/`, and `docs/roadmap.md`.
+- [x] Keep `fixtures/exposure/`.
+- [x] Keep `multica/issue-template.md` because it contains
+      exposure-specific safety fields and stop conditions.
+- [x] Keep `scripts/`.
+
+Historical bootstrap copies included shared runtime templates in this product
+repo. Current policy is to keep only project-specific governance here and use
+`Notyet1307/codex-multica` plus live Multica workspace configuration as the
+source of truth for shared agents, skills, prompts, squads, and autopilot
+templates.
+
+Do not copy `.agents/skills/`, `multica/agent-system-prompts/`,
+`multica/agents.yaml`, `multica/squads.yaml`, or `multica/autopilots.yaml` back
+into this repo unless a later Multica issue explicitly approves that scope.
 
 ## 3. Adapt Repository-Specific Files
 
@@ -62,14 +74,16 @@ part of this bootstrap.
 ## 5. Configure Multica
 
 - [ ] Confirm the Multica project is connected to the GitHub repository.
-- [ ] Reuse existing workspace skills where possible, including:
+- [ ] Reuse existing workspace skills from `Notyet1307/codex-multica` and live
+      Multica workspace configuration where possible, including:
   - `spec-first-intake`
   - `tdd-vertical-slice`
   - `systematic-debugging`
   - `verification-before-completion`
   - `security-pr-review`
   - `context-pack`
-- [ ] Reuse the `OpenAI-*` workspace agents described in `multica/agents.yaml`.
+- [ ] Reuse the `OpenAI-*` workspace agents maintained in
+      `Notyet1307/codex-multica` and live Multica workspace configuration.
 - [ ] Route security-sensitive work to `OpenAI-security-reviewer`.
 
 ## 6. Open the First Bootstrap PR

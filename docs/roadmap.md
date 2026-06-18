@@ -99,7 +99,8 @@ Done when:
 - `make verify` works.
 - CI, CodeQL, and DeepSeek review are configured.
 - Human final merge is required.
-- Visible context-pack handoff rules are available.
+- Visible context-pack handoff expectations are documented for this repository;
+  shared skill and runtime templates are maintained outside this product repo.
 - Repository safety boundaries are documented.
 
 Non-goals:

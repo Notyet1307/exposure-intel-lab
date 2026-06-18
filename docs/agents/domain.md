@@ -13,6 +13,7 @@ Use this file to keep product and engineering language consistent.
 | Multica issue | The source of truth for requested work | GitHub issue as source of truth | GitHub may mirror or link work, but Multica owns intake. |
 | Agent | A configured Codex worker in Multica | bot | Agents have bounded roles and must not auto-merge. |
 | Squad | A Multica routing group led by `OpenAI-scoper` | team | The squad routes issues to the narrowest competent owner. |
+| Shared Multica runtime templates | Workspace-level agents, skills, prompts, squad design, and autopilot templates | product repo-owned governance | Maintained in `Notyet1307/codex-multica` and live Multica workspace configuration. |
 | Handoff Back | Worker summary to the requester before review | status note only | Include changed files, validation, scope check, risks, PR URL, and context pack when requested. |
 | Readiness check | `make verify` | full product test suite | Verifies required governance files and automation are usable. |
 | PI-agent | Possible future project-local agent runtime | current runtime | Not installed or integrated by this bootstrap. |
@@ -24,9 +25,9 @@ Use this file to keep product and engineering language consistent.
 | Context | Owns | Does not own | Main directories |
 |---|---|---|---|
 | Agent operating rules | Durable instructions, review policy, safety boundaries | Product runtime code | `AGENTS.md`, `docs/agents/` |
-| Multica configuration | Agents, squads, autopilots, issue templates | GitHub Actions execution | `multica/` |
+| Multica project issue template | Exposure-specific issue fields, safety notes, and stop conditions | Shared live agents, skills, prompts, squads, or autopilot templates | `multica/issue-template.md` |
 | GitHub automation | CI, PR templates, DeepSeek review, CodeQL | Multica routing policy | `.github/` |
-| Repo-scoped skills | Reusable agent workflows bundled with this repo | Workspace skill source of truth | `.agents/skills/` |
+| Shared Multica runtime templates | Workspace agent desired state, shared skills, prompts, squads, and autopilot templates | Product repository facts, fixtures, contracts, validators, or issue templates | `Notyet1307/codex-multica`, live Multica workspace configuration |
 | Readiness scripts | Local validation helpers | Full CI simulation | `scripts/` |
 | Future product runtime | Authorized ingestion, analysis, storage, UI, integrations | Current bootstrap scope | Not present yet |
 

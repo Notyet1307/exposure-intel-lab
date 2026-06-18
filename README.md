@@ -35,6 +35,9 @@ for the fixture shape and safety constraints.
   this repository.
 - [NEW-REPO-BOOTSTRAP-CHECKLIST.md](NEW-REPO-BOOTSTRAP-CHECKLIST.md) tracks the
   bootstrap checklist for this repository's Multica, Codex, and GitHub workflow.
+- Shared live Multica agents, skills, prompts, squads, and autopilot templates
+  are maintained in `Notyet1307/codex-multica` and live Multica workspace
+  configuration, not in this product repository.
 - [docs/architecture/exposure-intelligence-workflow.md](docs/architecture/exposure-intelligence-workflow.md)
   defines the target authorized exposure intelligence workflow architecture and
   safety boundaries.
